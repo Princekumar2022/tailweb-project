@@ -16,7 +16,7 @@ const authentication = async function (req, res, next) {
       return res.status(403).send({status: false,message: "invalid token"});
     }
     // To verify the token, we are using error handling callback function
-    jwt.verify(bearerToken, "group42Project5", function (err, decoded) {
+    jwt.verify(bearerToken, "princeProjectTailwebs", function (err, decoded) {
       if (err) {
         return res.status(401).send({status: false,message: "Authentication Failed"});
       } else {

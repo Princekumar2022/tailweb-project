@@ -98,7 +98,7 @@ const userLogin = async function (req, res) {
       teacherId: checkEmail._id.toString(),
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24, //expires in 24 hr
-    }, "group42Project5");
+    }, "princeProjectTailwebs");
     res.setHeader("x-api-key", token);
 
     return res.status(200).send({ status: true, message: "User Login Successful", data: { teacherId: checkEmail._id, token: token }, });
