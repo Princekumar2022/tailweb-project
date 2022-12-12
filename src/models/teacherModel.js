@@ -12,7 +12,7 @@ const teacherSchema = new mongoose.Schema({
         required: true,
         trim: true,
         unique: true,
-       // lowercase: true,
+        // lowercase: true,
 
     },
     password: {
@@ -23,7 +23,7 @@ const teacherSchema = new mongoose.Schema({
     isDeleted: {
         type: Boolean,
         default: false,
-               
+
     }
 
 

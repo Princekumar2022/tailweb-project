@@ -30,4 +30,4 @@ const isValidMarks = function (value) {
 
 
 
-module.exports = {isValidRequestBody, isValidEmail, isValidPass, isValidName, isValidMarks}
+module.exports = { isValidRequestBody, isValidEmail, isValidPass, isValidName, isValidMarks }

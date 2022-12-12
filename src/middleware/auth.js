@@ -37,6 +37,7 @@ const authorization = async function (req, res, next) {
     let teacherLoggedIn = req.tokenData; //Accessing userId from token attribute
     req.teacherId = req.params.teacherId; // pass user id in path params
     //check if user id is valid or not
+    
     if (!isValidObjectId(req.teacherId)) {
       return res.status(400).send({status: false,message: "userId is invalid"});
     }

@@ -74,14 +74,14 @@ const userLogin = async function (req, res) {
       return res.status(400).send({ status: false, message: "Email must be present" });
     }
     if (!isValidEmail(email))
-    return res.status(400).send({ status: false, msg: "Please Enter a valid Email Id." });
+      return res.status(400).send({ status: false, msg: "Please Enter a valid Email Id." });
 
 
     if (!password) {
       return res.status(400).send({ status: false, message: "Password must be present" });
     }
     if (!isValidPass(password))
-    return res.status(400).send({ status: false, message: "Password must contain at least 8 digit containing with one capital letter, small letter, number and special symbol" })
+      return res.status(400).send({ status: false, message: "Password must contain at least 8 digit containing with one capital letter, small letter, number and special symbol" })
 
 
     let checkEmail = await teacherModel.findOne({ email: email });
@@ -100,7 +100,7 @@ const userLogin = async function (req, res) {
       exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24, //expires in 24 hr
     }, "group42Project5");
     res.setHeader("x-api-key", token);
-    
+
     return res.status(200).send({ status: true, message: "User Login Successful", data: { teacherId: checkEmail._id, token: token }, });
   } catch (err) {
     return res.status(500).send({ status: false, message: err.message });

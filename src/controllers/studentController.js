@@ -7,14 +7,14 @@ const { isValidObjectId } = require("mongoose");
 const filledMarks = async (req, res) => {
   // res.setHeader('Access-Conrol-Allow-Origin', '*');
   try {
-    let teacherId = req.params.teacherId;
+    //let teacherId = req.params.teacherId;
     let { name, data } = req.body;
     let { subject, marks } = data;
 
     if (data.length === 0) {
       return res.status(400).send({ status: false, message: "fill students subject and marks data" });
     }
-    if (!isValidObjectId(teacherId)) {
+    if (!isValidObjectId(req.teacherId)) {
       return res.status(400).send({ status: false, message: " Please!! input a valid Id :(" });
     }
 
@@ -24,20 +24,29 @@ const filledMarks = async (req, res) => {
     if (!isValidName(name))
       return res.status(400).send({ status: false, message: "Please Enter Valid Name" });
 
+    let findStudent = await studentModel.findOne({ name: name });
+
+    if (findStudent) {
+      return res.status(400).send({ status: false, message: "Student Exists!!" });
+    }
+
+    let checkMark = data.every((markObj) => (/[0-9]/).test(markObj.marks))
+
+    if (checkMark == false)
+      return res.status(400).send({ status: false, message: "Please Enter Valid  marks" });
+
     // if (!subject)
     //   return res.status(400).send({ status: false, message: "Please Enter subject" });
 
     // if (!isValidName(subject))
     //   return res.status(400).send({ status: false, message: "Please Enter Valid subject Name" });
 
-    // if (!marks)
-    //   return res.status(400).send({ status: false, message: "Please Enter  marks" });
 
     // if (!isValidMarks(marks))
     //   return res.status(400).send({ status: false, message: "Please Enter Valid marks" });
 
     let Obj = {
-      teacherId: teacherId,
+      teacherId: req.teacherId,
       name: name,
       data: data,
     }
@@ -54,35 +63,37 @@ const filledMarks = async (req, res) => {
 
 const updateStudent = async function (req, res) {
   try {
-    //teacherId, name, data(marks, subject)
 
-    //let teacherId = req.params.teacherId;
+
+    // let teacherId = req.params.teacherId;
     let studentId = req.params.studentId;
     let { name, data } = req.body;
-    //console.log(data)
+
     let query = {}
 
-    // if (data.length === 0) {
-    //   return res.status(400).send({ status: false, message: "fill students subject and marks data" });
-    // }
-    if (!isValidObjectId(req.teacherId)) {
-      return res.status(400).send({ status: false, message: " Please!! input a valid Id :(" });
+    //validate the teacher Id
+    if (!isValidObjectId(studentId)) {
+      return res.status(400).send({ status: false, message: " Please!! input a valid Student Id :(" });
     }
 
+    //find the student with the given id
     const studentExist = await studentModel.findOne({ _id: studentId })
+
+    //if the student does not exist
     if (!studentExist) {
       return res.status(404).send({ status: false, message: " student does not exist" })
     }
-    // console.log(studentId)
-    // console.log(studentExist.teacherId)
-    // console.log(teacherId)
-    // console.log(studentExist)
 
+    //check if right teacher is entering the right student marks
     if (studentExist.teacherId != req.teacherId) {
       return res.status(404).send({ status: false, message: "studentId and teacher id does not match" })
     }
 
+    if (!name && !data) {
+      return res.status(400).send({ status: false, message: "Please Enter Data For Update" });
+    }
 
+    //if the teacher is updating the name of the student .
     if (name) {
       if (!isValidName(name))
         return res.status(400).send({ status: false, message: "Please Enter Valid Name" });
@@ -90,31 +101,43 @@ const updateStudent = async function (req, res) {
       query.name = name
     }
 
-    //if theacher is entering the marks of the subject that is already entered
-    if (data.length != 0) {
-      let { subject, marks } = data[0];
-      if (subject && marks) {
-        console.log(data)
+    if (data) {
+      //if theacher is entering the marks of the subject that is already entered
+      if (data.length != 0) {
+
+        let checkMark = data.every((markObj) => (/[0-9]/).test(markObj.marks))
+
+        if (checkMark == false)
+          return res.status(400).send({ status: false, message: "Please Enter Valid  marks" });
+
+        //if user is enterig more than one subject from the body
+        if (data.length > 1) return res.status(400).send({ status: false, message: "Please enter subject one by one to update" })
+        let { subject, marks } = data[0];
+        if (subject && marks) {
 
 
-        //for checking if the subject aleady exist in the data
-        const subjectExist = studentExist.data.findIndex(data => data.subject == subject);
+          //for checking if the subject aleady exist in the data
+          const subjectExist = studentExist.data.findIndex(data => data.subject == subject);
+          console.log(subjectExist)
 
-        if (subjectExist != -1) {
+          if (subjectExist != -1) {
 
 
+            //if subject already exist the increment the marks of the partiuclar subject
+            const increaseMarks = await studentModel.findOneAndUpdate({ _id: studentId, "data.subject": subject },
+              { $inc: { "data.$.marks": +marks } }, { new: true });
 
-          const increaseMarks = await studentModel.findOneAndUpdate({ _id: studentId, "data.subject": subject },
-            { $inc: { "data.$[].marks": +marks } }, { new: true });
-          //{ $inc: { "grades.$[]": 10 } }
-        }
-        else {
+          }
+          else {
 
-          query.data = studentExist.data.concat(req.body.data)
+            //if the subject does not exist then concat the previous previous array with new array
+            query.data = studentExist.data.concat(req.body.data)
+
+          }
+
         }
 
       }
-
     }
 
     let updatedStudent = await studentModel.findOneAndUpdate({ _id: studentId }, query, { new: true })
@@ -135,42 +158,51 @@ const getStudent = async function (req, res) {
   try {
 
 
-    const { name, subject, marksGreaterThan, marksLessThan } = req.query;
-    let query = {}
+    // let query = { isDeleted: false };
+    //let teacherId = req.params.teacherId;
+    let filter = { isDeleted: false }
 
-    if (name) {
 
-      query.name = name
+
+    //  let nameIncludes = RegExp(`${data.name}`);
+    //  if (name) {
+    //    query.title = nameIncludes;
+    //  }
+
+    if (req.query.subject) {
+
+      filter["data.subject"] = req.query.subject;
     }
-    // {"someArray.$.someNestedArray":{"$elemMatch":{"name":"1"}}}
-    // { 'instock.qty': { $lte: 20 } }
 
 
-    if (subject) {
+    if (req.query.name) {
+      filter.name = req.query.name
+    }
+    let marksGreaterThan = req.query.marksGreaterThan
+    let marksLessThan = req.query.marksLessThan
 
-      query.subject = { 'data.$.subject': subject }
+    if (marksGreaterThan && marksLessThan) {
+      if (((/[a-zA-Z]/).test(marksGreaterThan)) || ((/[a-zA-Z]/).test(marksLessThan)))
+        return res.status(400).send({ status: false, message: "Please Enter Valid  marks" })
+      filter["data.marks"] = { $gt: Number(req.query.marksGreaterThan), $lte: Number(req.query.marksLessThan) }
     }
 
-    //{ field: { $in: [<value1>, <value2>, ... <valueN> ] } }
+    else if (marksGreaterThan) {
+      if ((/[a-zA-Z]/).test(marksGreaterThan))
+        return res.status(400).send({ status: false, message: "Please Enter Valid Marks" })
+      filter["data.marks"] = { $gt: Number(req.query.marksGreaterThan) }
 
-
-
-
-    if (query.marksGreaterThan && query.marksLessThan) {
-      query.marks = { 'data.$.marks': { $gt: Number(marksGreaterThan), $lt: Number(marksLessThan) } }
-    }
-    else if (query.marksGreaterThan) {
-      query.marks = { 'data.$.marks': { $gt: Number(marksGreaterThan) } }
-    } else if (query.marksLessThan) {
-      query.marks = { 'data.$.marks': { $lt: Number(marksLessThan) } }
+    } else if (marksLessThan) {
+      if ((/[a-zA-Z]/).test(marksLessThan))
+        return res.status(400).send({ status: false, message: "Please Enter Valid  Marks" })
+      filter["data.marks"] = { $lt: Number(req.query.marksLessThan) }
     };
-    console.log(query.subject)
-    const getStudent = await studentModel.find(query)
-
-    return res.status(200).send({ status: true, message: "Here the the requireddetais of students", data: getStudent })
 
 
+    console.log(filter)
+    const getStudent = await studentModel.find(filter)
 
+    return res.status(200).send({ status: true, message: "Here are the requireddetais of students", length: getStudent.length, data: getStudent })
 
   }
   catch (err) {
@@ -195,13 +227,9 @@ const deleteStudent = async function (req, res) {
       return res.status(404).send({ status: false, message: "studentId and teacher id does not match" })
     }
 
-    let deletedStudent = await studentModel.findOneAndUpdate({ _id: studentId, teacherId: req.teacherId }, { isDeleted: true }, { new: true })
+    let deletedStudent = await studentModel.findOneAndUpdate({ _id: studentId, teacherId: req.teacherId }, { $set: { isDeleted: true } }, { new: true })
 
     return res.status(200).send({ status: true, message: "student deleted successfully", data: deletedStudent })
-
-
-
-
 
   }
   catch (err) {

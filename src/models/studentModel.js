@@ -28,7 +28,7 @@ const studentSchema = new mongoose.Schema({
         _id: false
 
     }],
-    isDeleted:{type:Boolean, default:false}
+    isDeleted: { type: Boolean, default: false }
 
 }, { timestamps: true })
 

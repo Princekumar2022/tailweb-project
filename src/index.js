@@ -10,11 +10,11 @@ const port = process.env.PORT || 3000;
 
 mongoose.set('strictQuery', true);
 
-mongoose.connect(url ,{ useNewUrlParser: true }, )
+mongoose.connect(url, { useNewUrlParser: true },)
 
   .then(() => console.log("MongoDb is connected"))
   .catch((err) => console.log(err));
- 
+
 app.use("/", route);
 // app.use(function(req, res, next){
 //   res.setHeader('Access-Conrol-Allow-Origin', '*')
